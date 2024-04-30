@@ -71,7 +71,9 @@ public class AuthenticationService {
                 )
         );
 
+
         User user = userRepository.findByUsername(request.getUsername()).orElseThrow();
+
         String jwt = jwtService.generateToken(user);
 
         revokeAllTokenByUser(user);

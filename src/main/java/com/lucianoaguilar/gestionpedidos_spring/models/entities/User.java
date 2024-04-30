@@ -33,7 +33,7 @@ public class User implements UserDetails {
     @Column(name = "email",unique = true,nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = false,columnDefinition = "VARCHAR(255) DEFAULT 'USER'")
     @Enumerated(value = EnumType.STRING)
     Role role;
 
