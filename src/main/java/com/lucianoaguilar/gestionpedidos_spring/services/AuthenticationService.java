@@ -8,21 +8,25 @@ import com.lucianoaguilar.gestionpedidos_spring.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 @Service
 public class AuthenticationService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
+
     @Autowired
     UserRepository userRepository;
 
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-
     private final TokenRepository tokenRepository;
-
     private final AuthenticationManager authenticationManager;
 
     public AuthenticationService(UserRepository repository,
@@ -38,10 +42,11 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse register(User request) {
+        logger.debug("Attempting to register user: {}", request.getUsername());
 
-        // check if user already exist. if exist than authenticate the user
-        if(userRepository.findByUsername(request.getUsername()).isPresent()) {
-            return new AuthenticationResponse(null, "User already exist");
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            logger.warn("User already exists: {}", request.getUsername());
+            return new AuthenticationResponse(null, "User already exists");
         }
 
         User user = new User();
@@ -50,50 +55,51 @@ public class AuthenticationService {
         user.setEmail(request.getEmail());
         user.setRole(request.getRole());
 
-
-        user.setRole(request.getRole());
-
         user = userRepository.save(user);
 
         String jwt = jwtService.generateToken(user);
-
         saveUserToken(jwt, user);
 
+        logger.debug("User registration successful: {}", user.getUsername());
         return new AuthenticationResponse(jwt, "User registration was successful");
-
     }
 
     public AuthenticationResponse authenticate(User request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
-                        request.getPassword()
-                )
-        );
+        logger.debug("Attempting to authenticate user: {}", request.getUsername());
 
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getUsername(),
+                            request.getPassword()
+                    )
+            );
+        } catch (AuthenticationException e) {
+            logger.error("Authentication failed for user: {}", request.getUsername());
+            throw new AuthenticationException("Invalid username or password") {};
+        }
 
-        User user = userRepository.findByUsername(request.getUsername()).orElseThrow();
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         String jwt = jwtService.generateToken(user);
-
-        revokeAllTokenByUser(user);
+        revokeAllTokensByUser(user);
         saveUserToken(jwt, user);
 
+        logger.debug("User login successful: {}", user.getUsername());
         return new AuthenticationResponse(jwt, "User login was successful");
-
     }
-    private void revokeAllTokenByUser(User user) {
+
+    private void revokeAllTokensByUser(User user) {
         List<Token> validTokens = tokenRepository.findAllTokensByUser(user.getId());
-        if(validTokens.isEmpty()) {
+        if (validTokens.isEmpty()) {
             return;
         }
 
-        validTokens.forEach(t-> {
-            t.setLoggedOut(true);
-        });
-
+        validTokens.forEach(t -> t.setLoggedOut(true));
         tokenRepository.saveAll(validTokens);
     }
+
     private void saveUserToken(String jwt, User user) {
         Token token = new Token();
         token.setToken(jwt);
