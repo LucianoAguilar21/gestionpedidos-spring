@@ -26,9 +26,9 @@ public class Order {
     @Column(nullable = false)
     private String client;
 
-    @Column(nullable = false)
-    @Enumerated(value = EnumType.STRING)
-    private OrderType orderType;
+    @ManyToOne
+    @JoinColumn(name = "category_id", nullable = true)
+    private Category category;
 
     @Column(nullable = false)
     private boolean delivery;

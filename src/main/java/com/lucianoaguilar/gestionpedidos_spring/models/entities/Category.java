@@ -2,25 +2,23 @@ package com.lucianoaguilar.gestionpedidos_spring.models.entities;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-
+import lombok.Setter;
 
 @Entity
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "products")
-public class Product {
-
+@Table(name = "categories")
+public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "name",nullable = false, unique = true)
+    @Column(nullable = false, unique = true)
     private String name;
 
-    @Column(name = "price",nullable = false)
-    private Double price;
 
 }

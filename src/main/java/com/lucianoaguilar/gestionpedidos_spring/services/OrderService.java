@@ -31,7 +31,7 @@ public class OrderService {
         if(order.isPresent()){
             order.get().setDescription(request.getDescription());
             order.get().setClient(request.getClient());
-            order.get().setOrderType(request.getOrderType());
+            order.get().setCategory(request.getCategory());
             order.get().setDelivery(request.isDelivery());
             order.get().setDeliveryDate(request.getDeliveryDate());
             order.get().setAddress(request.getAddress());
